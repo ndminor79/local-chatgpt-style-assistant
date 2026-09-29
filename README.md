@@ -32,6 +32,7 @@ Open `http://127.0.0.1:8787`.
 - Fast, Balanced, and Think modes.
 - Optional web search with citations.
 - Optional deep research loop with progress events.
+- Index an allowed local directory and use supported files as question context.
 - Local conversation history in `data/conversations.json`.
 - Benchmark script for first-token latency, total latency, and approximate tokens/sec.
 

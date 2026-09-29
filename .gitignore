@@ -1,0 +1,33 @@
+node_modules/
+dist/
+coverage/
+benchmark-results/
+data/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+*.cer
+*.crt
+
+# Runtime state and diagnostics
+*.log
+*.sqlite
+*.sqlite3
+*.db
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

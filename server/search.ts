@@ -1,7 +1,6 @@
 import type { Source } from "./types";
 import { assertSafeFetchUrl, untrustedEvidenceHeader } from "./security";
-
-const userAgent = "LocalLLMAssistant/0.1 (+http://localhost)";
+import { fetchPublicText } from "./safeFetch";
 
 function decodeHtml(value: string): string {
   return value
@@ -54,12 +53,9 @@ export async function searchWeb(query: string, limit: number, timeoutMs: number)
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const url = `https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { "User-Agent": userAgent }
-    });
-    if (!response.ok) throw new Error(`Search failed with ${response.status}`);
-    return extractSearchResults(await response.text(), limit);
+    const response = await fetchPublicText(url, controller.signal);
+    if (response.status < 200 || response.status >= 300) throw new Error(`Search failed with ${response.status}`);
+    return extractSearchResults(response.text, limit);
   } finally {
     clearTimeout(timeout);
   }
@@ -70,12 +66,10 @@ export async function fetchReadableSource(source: Source, timeoutMs: number): Pr
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(source.url, {
-      signal: controller.signal,
-      headers: { "User-Agent": userAgent }
-    });
-    if (!response.ok) return source;
-    const html = await response.text();
+    const response = await fetchPublicText(source.url, controller.signal);
+    if (response.status < 200 || response.status >= 300) return source;
+    if (response.contentType && !/^(text\/|application\/(xhtml\+xml|xml|json))/i.test(response.contentType)) return source;
+    const html = response.text;
     const text = stripHtml(html).slice(0, 1800);
     return {
       ...source,

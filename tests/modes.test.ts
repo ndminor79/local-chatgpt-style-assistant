@@ -7,7 +7,7 @@ import { prepareMessages } from "../server/ollama";
 import { buildEvidencePrompt } from "../server/search";
 import { buildDirectoryIndex, retrieveDirectoryContext } from "../server/directoryContext";
 import { defaultSettings } from "../server/config";
-import { assertSafeFetchUrl, validateSettingsPatch } from "../server/security";
+import { assertSafeFetchUrl, isPublicIpAddress, validateSettingsPatch } from "../server/security";
 
 test("prepareMessages appends mode suffix to last user message", () => {
   const messages = prepareMessages([{ role: "user", content: "Hello" }], "think");
@@ -99,5 +99,29 @@ test("settings validation blocks remote Ollama by default", () => {
 
 test("safe fetch validation blocks localhost and private network URLs", () => {
   assert.throws(() => assertSafeFetchUrl("http://127.0.0.1:11434/api/tags"), /Localhost URLs are blocked/);
-  assert.throws(() => assertSafeFetchUrl("http://192.168.1.10/"), /Private network URLs are blocked/);
+  assert.throws(() => assertSafeFetchUrl("http://192.168.1.10/"), /Private or reserved network URLs are blocked/);
+  assert.throws(() => assertSafeFetchUrl("http://printer.local/"), /Localhost URLs are blocked/);
+  assert.throws(() => assertSafeFetchUrl("http://example.com:8080/"), /Nonstandard ports are blocked/);
+});
+
+test("safe fetch validation rejects reserved, mapped, and private IP ranges", () => {
+  for (const address of [
+    "0.1.2.3",
+    "100.64.0.1",
+    "169.254.10.10",
+    "192.0.2.1",
+    "198.18.0.1",
+    "203.0.113.10",
+    "224.0.0.1",
+    "::1",
+    "fc00::1",
+    "fe80::1",
+    "2001:db8::1",
+    "::ffff:127.0.0.1"
+  ]) {
+    assert.equal(isPublicIpAddress(address), false, `${address} should not be public`);
+  }
+  assert.equal(isPublicIpAddress("8.8.8.8"), true);
+  assert.equal(isPublicIpAddress("2001:4860:4860::8888"), true);
+  assert.equal(isPublicIpAddress("::ffff:8.8.8.8"), true);
 });
